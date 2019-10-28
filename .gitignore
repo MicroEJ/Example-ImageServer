@@ -1,0 +1,7 @@
+.sonar/
+bin/
+target~/
+com.microej.example.image.server.SimpleServer/
+src-adpgenerated/
+filesystem/
+com.microej.firmware.developer.KernelStartup/

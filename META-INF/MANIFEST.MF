@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Application-Id: DivApp
+Application-Version: 1.1.0
+Application-PrintableName: DivApp
+Application-Description: DivApp
+Application-Activities: com.microej.example.image.server.sandboxed.DivAppActivity
