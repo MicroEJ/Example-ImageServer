@@ -1,0 +1,11 @@
+.sonar/
+bin/
+target~/
+com.microej.example.image.server.ImageServer/
+com.microej.example.image.server.Main/
+src-adpgenerated/
+filesystem/
+.scannerwork/
+/wifi/*.properties
+/launchers/*.properties
+com.microej.firmware.developer.KernelStartup/

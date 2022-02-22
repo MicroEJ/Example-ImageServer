@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<!--
+ Copyright 2018-2021 MicroEJ Corp. All rights reserved.
+ Use of this source code is governed by a BSD-style license that can be found with this software.
+ MicroEJ Corp. PROPRIETARY. Use is subject to license terms.
+-->
+<html lang="en" >
+    <head>
+        <meta charset="utf-8" />
+        <title>MicroEJ server</title>
+        <style>
+	        *{
+			    margin:0;
+			    padding:0;
+			}
+			body {
+			    background-color:#f5f6f7;
+			    color:#4B5357;
+			    font:18px/3 Tahoma,sans-serif;
+			}
+			.container {
+			    overflow:hidden;
+			    width:960px;
+			    margin:20px auto;
+			}
+			.contr {
+			    background-color:#FFF;
+			    padding:10px 0;
+			    text-align:center;
+			
+			    border-radius:10px 10px 0 0;
+			    -moz-border-radius:10px 10px 0 0;
+			    -webkit-border-radius:10px 10px 0 0;
+			}
+			
+			.upload_form_cont {
+			    background: #ffffff;
+			    border-radius: 0 0 10px 10px;
+			    -moz-border-radius:0 0 10px 10px;
+			    -webkit-border-radius:0 0 10px 10px;
+			    overflow:hidden;
+			}
+			#mascot_logo {
+				display: block;
+				width: 50%;
+				height: 50%;
+				margin: 20px auto;
+			}
+			#upload_form {
+			    float:left;
+			    padding:20px;
+			    width:920px;
+			}
+			#upload_form > div {
+			    margin-bottom:10px;
+			}
+			#speed,#remaining {
+			    float:left;
+			    width:100px;
+			}
+			#b_transfered {
+			    float:right;
+			    text-align:right;
+			}
+			.clear_both {
+			    clear:both;
+			}
+			button {
+			    border-radius:10px;
+			    -moz-border-radius:10px;
+			    -ms-border-radius:10px;
+			    -o-border-radius:10px;
+			    -webkit-border-radius:10px;
+			
+			    border:1px solid #ccc;
+			    font-size:14pt;
+			    padding:5px 10px;
+			}
+			button[type=button] {
+				margin:20px 0 0 20px;
+				background-color:#ee502e;
+				border:none;
+				color:#fff;
+				padding:12px 25px;
+			}
+			button[type=button]:disabled {
+				background-color:#97a7af;
+			}
+			#file {
+				font-size:16px;
+				padding:60px 0 60px 180px;
+				border:2px dashed #cbd3d7;
+				background-color:#f5f6f7;
+			}
+			progress {
+				margin-left:20px;
+				display:none
+			}
+			#error,#error2,#warnsize {
+				text-align: center;
+			    color:#ee502e;
+			    display: none;
+			    font-size:10pt;
+			    margin-top:10px;
+			}
+			
+			#upload_response {
+				text-align: center;
+			    color:#6cc24a;
+			    margin-top: 10px;
+			    display: none;
+			    padding: 20px;
+			    overflow: hidden;
+			    border: 1px solid #ccc;
+			
+			    border-radius:10px;
+			    -moz-border-radius:10px;
+			    -ms-border-radius:10px;
+			    -o-border-radius:10px;
+			    -webkit-border-radius:10px;
+			}
+			
+			.colorinput{
+				padding:5px;
+				border:1px;
+				border-color:#cbd3d7;
+				border-style:solid;
+			}
+			
+			.advance{
+				display: inline-block;
+			}
+        </style>
+        <script>
+	        // common variables
+			var iBytesUploaded = 0;
+			var iBytesTotal = 0;
+			var iPreviousBytesLoaded = 0;
+			var iMaxFilesize = 100000; // 100KB
+			var oTimer = 0;
+			var sResultFileSize = '';
+			
+			function _(e) {
+			  return document.getElementById(e);
+			}
+			
+			function hideWarnings(){
+				_('upload_response').style.display = 'none';
+			    _('error').style.display = 'none';
+			    _('error2').style.display = 'none';
+			    _('warnsize').style.display = 'none';
+				_('percent').innerHTML="";
+			}
+			
+			function fileSelected() {
+			
+			    // hide different warnings
+			    hideWarnings()
+			
+			    // get selected file element
+			    var oFile = _('file').files[0];
+			
+			    // filter for image files
+			    var rFilter = /^(image\/png)$/i;
+			    if (! rFilter.test(oFile.type)) {
+			        _('error2').style.display = 'block';
+				    _('submit').disabled = true;
+			        return;
+			    }
+			
+			    // little test for filesize
+			    if (oFile.size > iMaxFilesize) {
+			        _('warnsize').style.display = 'block';
+				    _('submit').disabled = true;
+			        return;
+			    }
+				_("progressBar").value = 0;
+			    _('submit').disabled = false;
+			}
+			
+			function upload(){
+			  _('error').style.display = 'none';
+			  _('submit').disabled = true;
+			  var file = _("file").files[0];
+			  if(file!=null){
+			      _("progressBar").style.display = 'inline';
+				  _("upload_response").innerHTML="The image <i>"+file.name+"</i> has been uploaded successfully.";
+				  
+				  var format = _("format");
+				  var formdata = new FormData();
+				  formdata.append("fgColor", _("fgColor").value);
+				  formdata.append("bgColor", _("bgColor").value);
+				  formdata.append("format", format[format.selectedIndex].value);
+				  formdata.append("fileSize", file.size);
+				  formdata.append("file", file);
+				  var ajax = new XMLHttpRequest();
+				  ajax.upload.addEventListener("progress", progressHandler, false);
+				  ajax.addEventListener("load", completeHandler, false);
+				  ajax.addEventListener("error", reset, false);
+				  ajax.addEventListener("abort", reset, false);
+				  
+				  ajax.open("POST", "upload");  
+				  ajax.send(formdata);
+			  }
+			}
+			
+			function progressHandler(event) {
+			  var percent = (event.loaded / event.total) * 100;
+				_('percent').innerHTML=percent+"%";
+			  _("progressBar").value = Math.round(percent);
+			}
+			
+			function completeHandler(event) {
+			  hideWarnings();
+			  _('upload_response').style.display = 'block';
+			  _('submit').disabled = false;
+			}
+			
+			function reset(event) {
+			    _('error').style.display = 'block';
+			}
+			
+			function updateColor(id){
+				var colorElement =  _(id+"Color");
+				var color = colorElement.value;
+				color = '#' + (color.toUpperCase().replace(/[^(0-9|A-F)]/g, '')+"000000").substring(0, 6);
+				colorElement.value = color;
+				_(id+"ColorLabel").style = "background-color: "+color+";";
+			}
+			
+			function toggleAdvance(){
+				var adv = _('advance');
+				var showAdvance = _('showAdvance');
+				
+				if(adv.style.display === 'none'){
+					showAdvance.innerHTML = "Hide advanced settings &#8593;";
+					adv.style.display = 'inline-block';
+				}else {
+					showAdvance.innerHTML = "Show advanced settings &#8595;";
+					adv.style.display = 'none';
+				}
+			}
+        </script>
+    </head>
+    <body>
+
+        <div class="container" align="center">
+        	<img id="mascot_logo" src="png/mascot_logo_huge.png" />
+        	
+            <div class="contr">Drag and drop your image or click Choose File</div>
+
+            <div class="upload_form_cont">
+                <form id="upload_form" enctype="multipart/form-data" method="post" action="index.html">
+                    <div>
+                        <div><input type="file" name="file" id="file" onchange="fileSelected();" accept="image/png"/></div>
+                    </div>
+                    <div> 
+                    <a id="showAdvance" onclick="toggleAdvance()">Show advanced settings &#8595;</a>
+                    </div> 
+					<div class="advance" id="advance" align="left" style="display:none">
+						<div> 
+							Format:
+							<select name="format" id="format">
+								<option value="A8">A8</option>
+								<option value="ARGB1555">ARGB1555</option>
+								<option value="ARGB4444">ARGB4444</option>
+								<option value="ARGB8888">ARGB8888</option>
+								<option value="RGB565" selected>RGB565</option>
+								<option value="RGB888">RGB888</option>
+							</select> 
+						</div>
+						<div> 
+							Foreground color:
+							<input name="fgColor" id="fgColor" type="text" value="#000000" onchange="updateColor('fg')">
+							<span class="colorinput" id="fgColorLabel" style="background-color: #000000;">
+								&nbsp;&nbsp;&nbsp;
+							</span>
+						</div>
+						<div> 
+							Background color:
+							<input name="bgColor" id="bgColor" type="text" value="#FFFFFF" onchange="updateColor('bg')">
+							<span class="colorinput" id="bgColorLabel" style="background-color: #FFFFFF;">
+								&nbsp;&nbsp;&nbsp;
+							</span>
+						</div>
+					</div>
+                    <div>
+                        <button type="button" id="submit" onclick="upload()" disabled>Upload</button>
+                    	<progress id="progressBar" value="0" max="100" style="width:300px"></progress>
+						<p id="percent" style="display:inline"></p>
+                    </div>
+                    <div id="error"></div>
+                    <div id="error2">You should select valid image files only!</div>
+                    <div id="warnsize">Your file is too big (100KB). Please select smaller file.</div>
+
+                    <div id="progress_info">
+                        <div id="upload_response"></div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </body>
+</html>
